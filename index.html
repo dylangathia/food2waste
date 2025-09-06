@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Food2Energy — Sustainability Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --food-waste: #16a34a;        /* Green */
+      --methane-avoided: #000066;   /* Dark Blue */
+      --fertilizer: #F2D000;        /* Yellow */
+      --biogas: #FF8C00;            /* Orange */
+      --carbon-credits: #4B0082;    /* Indigo Purple */
+      --neutral: #1e293b;
+      --light: #f8fafc;
+      --light-gray: #f1f5f9;
+      --mid-gray: #e2e8f0;
+      --text: #334155;
+      --text-light: #64748b;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--light);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 0;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    /* Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 0;
+      margin-bottom: 10px;
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--food-waste);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 20px;
+    }
+    
+    .logo-text h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--neutral);
+      margin: 0;
+    }
+    
+    .logo-text p {
+      font-size: 14px;
+      color: var(--text-light);
+      margin: 0;
+    }
+    
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    #toggleBtn {
+      background: white;
+      border: 1px solid var(--mid-gray);
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    #toggleBtn:hover {
+      background: var(--light-gray);
+    }
+    
+    /* KPI Cards */
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: transform 0.2s;
+    }
+    
+    .card:hover {
+      transform: translateY(-3px);
+    }
+    
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .card-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+      color: white;
+    }
+    
+    .card-title {
+      font-size: 14px;
+      color: var(--text-light);
+      font-weight: 500;
+    }
+    
+    .card-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--neutral);
+    }
+    
+    .card-trend {
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 10px;
+      background: var(--light-gray);
+      border-radius: 20px;
+      width: fit-content;
+    }
+    
+    /* Card Colors */
+    .card:nth-child(1) .card-icon {
+      background: var(--food-waste);
+    }
+    
+    .card:nth-child(2) .card-icon {
+      background: var(--biogas);
+    }
+    
+    .card:nth-child(3) .card-icon {
+      background: var(--fertilizer);
+      color: #333; /* Dark text for better contrast on yellow */
+    }
+    
+    .card:nth-child(4) .card-icon {
+      background: var(--methane-avoided);
+    }
+    
+    .card:nth-child(5) .card-icon {
+      background: var(--carbon-credits);
+    }
+    
+    /* Charts Layout */
+    .dashboard-content {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+      margin-bottom: 30px;
+    }
+    
+    .panel {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .panel-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--neutral);
+    }
+    
+    .chart-container {
+      position: relative;
+      height: 300px;
+    }
+    
+    .chart-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    
+    /* AI Panel */
+    .ai-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    
+    .recommendation {
+      padding: 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      line-height: 1.5;
+    }
+    
+    .recommendation i {
+      font-size: 18px;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+    
+    .good { 
+      background: rgba(34, 197, 94, 0.08);
+      border-left: 3px solid #16a34a;
+    }
+    
+    .warning { 
+      background: rgba(245, 158, 11, 0.08);
+      border-left: 3px solid #f59e0b;
+    }
+    
+    .alert { 
+      background: rgba(239, 68, 68, 0.08);
+      border-left: 3px solid #ef4444;
+    }
+    
+    .notice { 
+      background: rgba(59, 130, 246, 0.08);
+      border-left: 3px solid #3b82f6;
+    }
+    
+    .sensor-snapshot {
+      background: var(--light-gray);
+      border-radius: 10px;
+      padding: 20px;
+    }
+    
+    .sensor-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 15px;
+      color: var(--neutral);
+    }
+    
+    .sensor-data {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    
+    .sensor-item {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .sensor-label {
+      font-size: 12px;
+      color: var(--text-light);
+      margin-bottom: 4px;
+    }
+    
+    .sensor-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--neutral);
+    }
+    
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 14px;
+      color: var(--text-light);
+      margin-top: 30px;
+    }
+    
+    /* Responsive */
+    @media (min-width: 1024px) {
+      .dashboard-content {
+        grid-template-columns: 2fr 1fr;
+      }
+    }
+    
+    @media (max-width: 1023px) {
+      .chart-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .kpis {
+        grid-template-columns: 1fr;
+      }
+      
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+      }
+      
+      .header-controls {
+        width: 100%;
+        justify-content: space-between;
+      }
+      
+      .sensor-data {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <div class="logo-icon">
+          <i class="fas fa-leaf"></i>
+        </div>
+        <div class="logo-text">
+          <h1>Food2Energy — Sustainability Dashboard</h1>
+          <p>Tracking waste conversion metrics and environmental impact</p>
+        </div>
+      </div>
+      <div class="header-controls">
+        <div class="last-update">Last update: <span id="lastUpdate">Just now</span></div>
+        <button id="toggleBtn">
+          <i class="fas fa-pause"></i>
+          <span>Pause Updates</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- KPI Cards -->
+    <div class="kpis">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">
+            <i class="fas fa-trash"></i>
+          </div>
+          <div>
+            <div class="card-title">Food Waste Diverted</div>
+            <div class="card-value" id="kpiFood">0 kg</div>
+          </div>
+        </div>
+        <div class="card-trend"><i class="fas fa-arrow-up"></i> 12% from last week</div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">
+            <i class="fas fa-fire"></i>
+          </div>
+          <div>
+            <div class="card-title">Biogas Produced</div>
+            <div class="card-value" id="kpiMethane">0 m³</div>
+          </div>
+        </div>
+        <div class="card-trend"><i class="fas fa-arrow-up"></i> 8% from last week</div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">
+            <i class="fas fa-seedling"></i>
+          </div>
+          <div>
+            <div class="card-title">Fertilizer Output</div>
+            <div class="card-value" id="kpiFertilizer">0 L</div>
+          </div>
+        </div>
+        <div class="card-trend"><i class="fas fa-arrow-up"></i> 10% from last week</div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">
+            <i class="fas fa-wind"></i>
+          </div>
+          <div>
+            <div class="card-title">Methane Avoided</div>
+            <div class="card-value" id="kpiAvoided">0 kg</div>
+          </div>
+        </div>
+        <div class="card-trend"><i class="fas fa-arrow-up"></i> 5% from last week</div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">
+            <i class="fas fa-award"></i>
+          </div>
+          <div>
+            <div class="card-title">Carbon Credits</div>
+            <div class="card-value" id="kpiCarbon">0</div>
+          </div>
+        </div>
+        <div class="card-trend"><i class="fas fa-arrow-up"></i> 7% from last week</div>
+      </div>
+    </div>
+
+    <!-- Charts + AI Panel -->
+    <div class="dashboard-content">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Waste Conversion Metrics</div>
+          <div class="time-filter">
+            <select id="timeRange">
+              <option value="7">Last 7 days</option>
+              <option value="14" selected>Last 14 days</option>
+              <option value="30">Last 30 days</option>
+            </select>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="lineChart"></canvas>
+        </div>
+        
+        <div class="chart-grid" style="margin-top: 30px;">
+          <div>
+            <div class="panel-header">
+              <div class="panel-title">Methane Avoided (Weekly)</div>
+            </div>
+            <div class="chart-container" style="height: 250px;">
+              <canvas id="barChart"></canvas>
+            </div>
+          </div>
+          <div>
+            <div class="panel-header">
+              <div class="panel-title">Output Distribution</div>
+            </div>
+            <div class="chart-container" style="height: 250px;">
+              <canvas id="doughnutChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel ai-panel">
+        <div class="panel-header">
+          <div class="panel-title">AI Recommendations</div>
+          <i class="fas fa-robot" style="color: var(--carbon-credits); font-size: 20px;"></i>
+        </div>
+        <div id="recs"></div>
+        
+        <div class="sensor-snapshot">
+          <div class="sensor-title">Live Sensor Data</div>
+          <div class="sensor-data">
+            <div class="sensor-item">
+              <div class="sensor-label">Recent Input</div>
+              <div class="sensor-value" id="sensorFood">0 kg</div>
+            </div>
+            <div class="sensor-item">
+              <div class="sensor-label">Biogas</div>
+              <div class="sensor-value" id="sensorMethane">0 m³</div>
+            </div>
+            <div class="sensor-item">
+              <div class="sensor-label">Fertilizer</div>
+              <div class="sensor-value" id="sensorFertilizer">0 L</div>
+            </div>
+            <div class="sensor-item">
+              <div class="sensor-label">pH Level</div>
+              <div class="sensor-value" id="sensorPH">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      Prototype dashboard — use sensor calibration and lab tests before production deployment.
+      <br>© 2023 Food2Energy — Sustainable Waste Solutions
+    </footer>
+  </div>
+
+  <script>
+    // === DATA SETUP ===
+    const days = 14;
+    let series = [];
+    const today = new Date();
+    
+    function initializeData(daysCount) {
+      series = [];
+      for (let i = daysCount - 1; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        const food = Math.round(80 + Math.random() * 120);
+        const methane = +(food * (0.45 + Math.random() * 0.15)).toFixed(2);
+        const avoided = +(food * 0.05).toFixed(2);
+        const fertilizer = +(food * 0.6).toFixed(1);
+        const carbon = Math.round(avoided * 0.8);
+        const pH = +(6.8 + Math.random() * 0.8).toFixed(2);
+        series.push({date: d.toISOString().slice(0,10), food, methane, avoided, fertilizer, carbon, pH});
+      }
+      updateAllCharts();
+    }
+    
+    function updateKPIs() {
+      const totalFood = series.reduce((s,p)=>s+p.food,0);
+      const totalMethane = series.reduce((s,p)=>s+p.methane,0).toFixed(2);
+      const totalAvoided = series.reduce((s,p)=>s+p.avoided,0).toFixed(2);
+      const totalFert = series.reduce((s,p)=>s+p.fertilizer,0).toFixed(1);
+      const totalCarbon = series.reduce((s,p)=>s+p.carbon,0);
+
+      document.getElementById("kpiFood").innerText = totalFood+" kg";
+      document.getElementById("kpiMethane").innerText = totalMethane+" m³";
+      document.getElementById("kpiAvoided").innerText = totalAvoided+" kg";
+      document.getElementById("kpiFertilizer").innerText = totalFert+" L";
+      document.getElementById("kpiCarbon").innerText = totalCarbon;
+      
+      // Update last update time
+      document.getElementById("lastUpdate").innerText = new Date().toLocaleTimeString();
+    }
+
+    // === CHARTS ===
+    let lineChart, barChart, doughnutChart;
+    
+    function initializeCharts() {
+      const lineCtx = document.getElementById("lineChart").getContext("2d");
+      lineChart = new Chart(lineCtx, {
+        type: "line",
+        data: {
+          labels: series.map(s=>s.date),
+          datasets: [
+            { 
+              label:"Food Waste (kg)", 
+              data:series.map(s=>s.food), 
+              borderColor: "#16a34a",
+              backgroundColor: "rgba(22, 163, 74, 0.1)",
+              fill: true,
+              tension: 0.4,
+              borderWidth: 2,
+              pointBackgroundColor: "#16a34a",
+              pointRadius: 3,
+              pointHoverRadius: 6
+            },
+            { 
+              label:"Biogas (m³)", 
+              data:series.map(s=>s.methane), 
+              borderColor: "#FF8C00",
+              backgroundColor: "rgba(255, 140, 0, 0.1)",
+              fill: true,
+              tension: 0.4,
+              borderWidth: 2,
+              pointBackgroundColor: "#FF8C00",
+              pointRadius: 3,
+              pointHoverRadius: 6
+            }
+          ]
+        },
+        options: { 
+          responsive: true, 
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                usePointStyle: true,
+                padding: 20
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: {
+                drawBorder: false
+              }
+            },
+            x: {
+              grid: {
+                display: false
+              },
+              ticks: {
+                // Make dates display vertically
+                maxRotation: 90,
+                minRotation: 45,
+                autoSkip: true,
+                maxTicksLimit: 14
+                }
+            }
+          }
+        }
+      });
+
+      const barCtx = document.getElementById("barChart").getContext("2d");
+      barChart = new Chart(barCtx, {
+        type: "bar",
+        data: {
+          labels: ["W1","W2"],
+          datasets: [
+            { 
+              label:"Methane Avoided (kg)", 
+              data:[0,0], 
+              backgroundColor: "#000066",
+              borderRadius: 6,
+              borderWidth: 0
+            }
+          ]
+        },
+        options: { 
+          responsive: true, 
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: {
+                drawBorder: false
+              }
+            },
+            x: {
+              grid: {
+                display: false
+              }
+            }
+          }
+        }
+      });
+      
+      const doughnutCtx = document.getElementById("doughnutChart").getContext("2d");
+      doughnutChart = new Chart(doughnutCtx, {
+        type: "doughnut",
+        data: {
+          labels: ["Biogas", "Fertilizer", "Methane Avoided"],
+          datasets: [{
+            data: [0, 0, 0],
+            backgroundColor: [
+              '#FF8C00', // Biogas - Orange
+              '#F2D000', // Fertilizer - Yellow
+              '#000066'  // Methane Avoided - Dark Blue
+            ],
+            borderWidth: 0,
+            hoverOffset: 12
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '70%',
+          plugins: {
+            legend: {
+              position: 'bottom'
+            }
+          }
+        }
+      });
+    }
+    
+    function updateAllCharts() {
+      if (!lineChart || !barChart || !doughnutChart) return;
+      
+      lineChart.data.labels = series.map(s=>s.date);
+      lineChart.data.datasets[0].data = series.map(s=>s.food);
+      lineChart.data.datasets[1].data = series.map(s=>s.methane);
+      lineChart.update();
+      
+      const weeks = [0,0,0,0];
+      series.forEach((s,i)=>{weeks[Math.floor(i/7)] += s.avoided;});
+      barChart.data.labels = weeks.map((_,i)=>"W"+(i+1));
+      barChart.data.datasets[0].data = weeks;
+      barChart.update();
+      
+      const totalMethane = series.reduce((s,p)=>s+p.methane,0);
+      const totalFertilizer = series.reduce((s,p)=>s+p.fertilizer,0);
+      const totalAvoided = series.reduce((s,p)=>s+p.avoided,0);
+      
+      doughnutChart.data.datasets[0].data = [totalMethane, totalFertilizer, totalAvoided];
+      doughnutChart.update();
+    }
+
+    // === AI Recommendations ===
+    function updateRecs() {
+      const recsDiv = document.getElementById("recs");
+      recsDiv.innerHTML="";
+      const latest = series[series.length-1];
+      const prevAvg = series.slice(-4,-1).reduce((s,p)=>s+p.methane,0)/3 || latest.methane;
+      const recs=[];
+      
+      if(Math.abs(latest.methane-prevAvg)/Math.max(1,prevAvg)<0.15){
+        recs.push({level:"good", icon:"fa-check-circle", text:"System stable: continue current waste mix."});
+      }
+      if(latest.methane<prevAvg*0.8){
+        recs.push({level:"warning", icon:"fa-exclamation-triangle", text:"Biogas production dropping: add starchy waste (bread, roots)."});
+      }
+      if(latest.pH<6.6){
+        recs.push({level:"alert", icon:"fa-exclamation-circle", text:"Acidity rising: add fibrous material or manure."});
+      }
+      if(latest.pH>7.8){
+        recs.push({level:"notice", icon:"fa-info-circle", text:"pH high: check buffer or reduce alkaline inputs."});
+      }
+      if(recs.length===0) recs.push({level:"good", icon:"fa-check-circle", text:"No anomalies detected. Keep operating."});
+      
+      recs.forEach(r=>{
+        const d=document.createElement("div");
+        d.className="recommendation "+r.level;
+        d.innerHTML=`<i class="fas ${r.icon}"></i><span>${r.text}</span>`;
+        recsDiv.appendChild(d);
+      });
+    }
+
+    // === LIVE SIMULATION ===
+    let live = true;
+    document.getElementById("toggleBtn").onclick=()=>{
+      live=!live;
+      document.getElementById("toggleBtn").innerHTML = live ? 
+        '<i class="fas fa-pause"></i><span>Pause Updates</span>' : 
+        '<i class="fas fa-play"></i><span>Resume Updates</span>';
+    };
+    
+    // Time range filter
+    document.getElementById("timeRange").addEventListener("change", function() {
+      initializeData(parseInt(this.value));
+      updateKPIs();
+      updateRecs();
+    });
+
+    function tick() {
+      if(!live) return;
+      const now=new Date();
+      const food=Math.round(30+Math.random()*120);
+      const methane=+(food*(0.45+Math.random()*0.15)).toFixed(2);
+      const avoided=+(food*0.05).toFixed(2);
+      const fertilizer=+(food*0.6).toFixed(1);
+      const carbon=Math.round(avoided * 0.8);
+      const pH=+(6.4+Math.random()*1.2).toFixed(2);
+      const today=now.toISOString().slice(0,10);
+
+      let last=series[series.length-1];
+      if(last.date===today){
+        last.food+=food;
+        last.methane=+(last.methane+methane).toFixed(2);
+        last.avoided=+(last.avoided+avoided).toFixed(2);
+        last.fertilizer=+(last.fertilizer+fertilizer).toFixed(1);
+        last.carbon+=carbon;
+        last.pH=+((last.pH+pH)/2).toFixed(2);
+      } else {
+        // If we have a new day, remove the first element to maintain the same number of days
+        if (series.length >= parseInt(document.getElementById("timeRange").value)) {
+          series.shift();
+        }
+        series.push({date:today, food, methane, avoided, fertilizer, carbon, pH});
+      }
+
+      // Update sensor snapshot
+      document.getElementById("sensorFood").innerText = `${food} kg`;
+      document.getElementById("sensorMethane").innerText = `${methane} m³`;
+      document.getElementById("sensorFertilizer").innerText = `${fertilizer} L`;
+      document.getElementById("sensorPH").innerText = pH;
+
+      updateKPIs();
+      updateRecs();
+      updateAllCharts();
+    }
+
+    // Initialize the dashboard
+    initializeData(days);
+    initializeCharts();
+    updateKPIs();
+    updateRecs();
+    setInterval(tick, 5000);
+  </script>
+</body>
+</html>
